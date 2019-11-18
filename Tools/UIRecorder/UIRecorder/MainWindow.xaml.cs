@@ -15,6 +15,7 @@
 //******************************************************************************
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
@@ -306,7 +307,7 @@ namespace WinAppDriverUIRecorder
         private void btnWinAppDriverCode_Click(object sender, RoutedEventArgs e)
         {
             StringBuilder sb = new StringBuilder();
-
+            StringBuilder sb1 = new StringBuilder();
             lock (RecordedUiTask.s_lockRecordedUi)
             {
                 if (RecordedUiTask.s_listRecordedUi.Count == 0)
@@ -325,6 +326,10 @@ namespace WinAppDriverUIRecorder
                 {
                     if (uiTask.UiTaskName != EnumUiTaskName.Inspect)
                     {
+                        if (uiTask.UiTaskName != EnumUiTaskName.KeyboardInput)
+                            sb1.AppendLine(string.Format("{0};{1};{2}", uiTask.UiTaskName, uiTask.Tag, uiTask.GetXPath(true)));
+                        else
+                            sb1.AppendLine(string.Format("{0};{1};{2}", uiTask.UiTaskName, uiTask.Tag, string.Empty));
                         if (uiTask.UiTaskName == EnumUiTaskName.LeftClick)
                         {
                             focusedLeftElementName = uiTask.VariableName;
@@ -338,7 +343,14 @@ namespace WinAppDriverUIRecorder
             if (sb.Length > 0)
             {
                 Clipboard.SetText(sb.ToString());
-
+                if(sb1.Length>0)
+                {
+                    string path = Directory.GetCurrentDirectory() + "\\" + System.Diagnostics.Process.GetCurrentProcess().ProcessName + ".ksrpa";
+                    using (var tw = new StreamWriter(path, true))
+                    {
+                        tw.WriteLine(sb1.ToString());
+                    }
+                }
                 this.Dispatcher.Invoke(new Action(() =>
                 {
                     this.toolTipText.Text = "WinAppDriver client code copied to clipboard";
